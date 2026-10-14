@@ -93,11 +93,20 @@
 
   /* ---------- bila kiraan bermula ---------- */
   function sectionVisible() {
-    var el = $('#total');
-    if (!el) return true;
-    var r = el.getBoundingClientRect();
     var vh = window.innerHeight || document.documentElement.clientHeight;
-    return r.top < vh * 0.9 && r.bottom > 0;
+    function rect(el) {
+      if (!el) return null;
+      var r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) return null;   // display:none
+      return r;
+    }
+    // desktop: nombor besar dalam seksyen jumlah, kena berada dalam 90% atas skrin
+    var big = rect($('#total'));
+    if (big && big.top < vh * 0.9 && big.bottom > 0) return true;
+    // telefon: bar bawah melekat di pinggir skrin — cukup kalau ia dirender
+    var bar = rect($('#mobile-total'));
+    if (bar && bar.bottom > 0 && bar.top < vh) return true;
+    return false;
   }
 
   function tryReveal() {
