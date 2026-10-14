@@ -12,13 +12,17 @@
   var TARGET = 3000;
   var REFRESH_MS = 15000;
   var DEFAULT_URL = 'https://infaq.drsuhailsatri.com/';
-  var DUR_FIRST = 1600;   // ms — kiraan pertama, dari RM0
-  var DUR_NEXT  = 900;    // ms — bila jumlah berubah kemudian
+  var DUR_FIRST = 1700;    // ms — kiraan pertama, dari kosong
+  var DUR_NEXT  = 900;     // ms — bila jumlah berubah kemudian
+  var REVEAL_FALLBACK = 8000;  // ms — jaring keselamatan kalau tak pernah kelihatan
 
   var prefersReduced = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var lastTotal = null;
+  var pendingTotal = null;     // jumlah yang menunggu seksyen kelihatan
+  var revealed = false;
+  var revealTimer = null;
   var busy = false;
   var rafId = null;
   var settleId = null;
@@ -73,18 +77,59 @@
     function frame(now) {
       if (t0 === null) t0 = now;
       var p = Math.min(1, (now - t0) / duration);
-      var eased = 1 - Math.pow(1 - p, 3);      // laju dulu, perlahan di hujung
+      var eased = 1 - Math.pow(1 - p, 3);       // laju dahulu, perlahan di hujung
       paint(from + (to - from) * eased);
       if (p < 1) { rafId = requestAnimationFrame(frame); }
       else { rafId = null; done(); }
     }
     rafId = requestAnimationFrame(frame);
 
-    // jaring keselamatan: kalau rAF tersekat (tab latar), tetap mendarat
+    // jaring keselamatan: kalau rAF tersekat (tab latar), angka tetap mendarat
     settleId = setTimeout(function () {
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       done();
-    }, duration + 600);
+    }, duration + 700);
+  }
+
+  /* ---------- bila kiraan bermula ---------- */
+  function sectionVisible() {
+    var el = $('#total');
+    if (!el) return true;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    return r.top < vh * 0.9 && r.bottom > 0;
+  }
+
+  function tryReveal() {
+    if (revealed || pendingTotal === null) return;
+    if (!sectionVisible()) return;
+    revealed = true;
+    if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+    countTo(0, pendingTotal, DUR_FIRST);
+  }
+
+  function armReveal() {
+    // pemicu: IntersectionObserver + mana-mana interaksi/scrol (jaring luas)
+    if ('IntersectionObserver' in window) {
+      var host = $('#total');
+      if (host) {
+        try {
+          var io = new IntersectionObserver(function (es) {
+            es.forEach(function (e) { if (e.isIntersecting) tryReveal(); });
+          }, { threshold: 0.2 });
+          io.observe(host.closest('section') || host);
+        } catch (e) { /* abaikan */ }
+      }
+    }
+    ['scroll', 'resize', 'click', 'touchstart', 'keydown'].forEach(function (ev) {
+      window.addEventListener(ev, tryReveal, { passive: true });
+    });
+    // kalau seksyen langsung tak pernah kelihatan, papar nilai betul juga
+    revealTimer = setTimeout(function () {
+      if (revealed || pendingTotal === null) return;
+      revealed = true;
+      paint(pendingTotal);
+    }, REVEAL_FALLBACK);
   }
 
   /* ---------- paparan ---------- */
@@ -115,11 +160,19 @@
       setText('#update-announcement', 'Jumlah terkini ' + money(total));
     }
 
-    var from = (lastTotal === null) ? 0 : lastTotal;
-    if (animate) countTo(from, total, lastTotal === null ? DUR_FIRST : DUR_NEXT);
-    else         paint(total);
-
-    lastTotal = total;
+    if (lastTotal === null) {
+      // muatan pertama — kira naik dari kosong, hanya apabila kelihatan
+      pendingTotal = total;
+      revealed = false;
+      lastTotal = total;
+      tryReveal();
+    } else if (animate && total !== lastTotal) {
+      countTo(lastTotal, total, DUR_NEXT);
+      lastTotal = total;
+    } else {
+      paint(total);
+      lastTotal = total;
+    }
   }
 
   /* ---------- ambil data ---------- */
@@ -137,7 +190,6 @@
       })
       .catch(function () {
         setText('#connection', 'Sambungan terganggu · jumlah terakhir dipaparkan');
-        if (lastTotal === null) { lastTotal = 0; paint(0); }
       })
       .then(function () {
         busy = false;
@@ -226,6 +278,7 @@
     $$('.share').forEach(function (b) { b.addEventListener('click', shareWhatsApp); });
 
     initTabs();
+    armReveal();
     refresh();
     setInterval(function () { if (!document.hidden) refresh(); }, REFRESH_MS);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
