@@ -27,6 +27,28 @@
   var rafId = null;
   var settleId = null;
 
+  /* ----------------------------------------------------------------
+     JARING KESELAMATAN DATA
+     Kalau data/progress.json gagal dibaca — JSON rosak akibat edit
+     tersilap, atau GitHub Pages sedang membina semula — jangan sekali
+     papar RM0. Laman akan guna nilai sah terakhir yang diketahui.
+     Nilai di bawah dikemas kini setiap kali jumlah berubah.
+     ---------------------------------------------------------------- */
+  var FALLBACK = {
+    total: 700,
+    target: 3000,
+    donors: 8,
+    updatedAt: '2026-10-14T17:30:31+08:00',
+    history: [
+      { at: '2026-10-14T13:09:00+08:00', total: 230 },
+      { at: '2026-10-14T14:28:46+08:00', total: 330 },
+      { at: '2026-10-14T16:15:51+08:00', total: 630 },
+      { at: '2026-10-14T16:37:02+08:00', total: 680 },
+      { at: '2026-10-14T17:30:31+08:00', total: 700 }
+    ]
+  };
+  var lastGood = null;
+
   function money(v) {
     return 'RM' + Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 });
   }
@@ -243,11 +265,18 @@
     fetch('data/progress.json?v=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (d) {
+        if (d === null || typeof d !== 'object' || isNaN(Number(d.total))) {
+          throw new Error('data tidak sah');
+        }
+        lastGood = d;
         setText('#connection', 'Kemas kini berkala · sekitar setiap 6 jam');
         render(d, true);
       })
       .catch(function () {
-        setText('#connection', 'Sambungan terganggu · jumlah terakhir dipaparkan');
+        /* JSON rosak (edit tersilap dari telefon) atau laman sedang dibina.
+           Jangan papar RM0 — papar nilai sah terakhir. */
+        setText('#connection', 'Jumlah terakhir disahkan · laman sedang menyemak semula');
+        render(lastGood || FALLBACK, false);
       })
       .then(function () {
         busy = false;

@@ -14,11 +14,13 @@ mengembangkan setiap entri jadi 3 baris - fail jadi dua kali panjang.
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PATH = os.path.join(HERE, "data", "progress.json")
+APPJS = os.path.join(HERE, "app.js")
 MYT = timezone(timedelta(hours=8))
 
 CARA = ("EDIT DI SINI: 'total' (jumlah RM terkumpul), 'donors' (bilangan orang), "
@@ -55,6 +57,40 @@ def save(d):
     with open(PATH, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(out) + "\n")
     json.load(open(PATH, encoding="utf-8"))   # sahkan masih JSON sah
+
+
+def sync_fallback(d):
+    """Kemas kini objek FALLBACK dalam app.js.
+
+    Jaring keselamatan laman: kalau progress.json rosak (edit tersilap
+    dari telefon) atau laman sedang dibina, laman papar nilai ini dan
+    BUKAN RM0. Ia mesti sentiasa sama dengan progress.json - kalau tidak
+    ia jadi angka basi yang mengelirukan.
+    """
+    if not os.path.exists(APPJS):
+        print("  (app.js tiada - FALLBACK tak dikemas kini)")
+        return
+    h = d.get("history", [])
+    hist = ",\n".join(
+        "      { at: %s, total: %s }" % (json.dumps(e["at"]).replace('"', "'"),
+                                       jnum(e["total"]))
+        for e in h)
+    block = ("  var FALLBACK = {\n"
+             "    total: %s,\n"
+             "    target: %s,\n"
+             "    donors: %d,\n"
+             "    updatedAt: %s,\n"
+             "    history: [\n%s\n    ]\n  };"
+             % (jnum(d["total"]), jnum(d["target"]), d["donors"],
+                json.dumps(d["updatedAt"]).replace('"', "'"), hist))
+    src = open(APPJS, encoding="utf-8").read()
+    new, n = re.subn(r"  var FALLBACK = \{.*?\n  \};", block, src, flags=re.S)
+    if n != 1:
+        print("  AMARAN: tak dapat kemas kini FALLBACK dalam app.js (padanan %d)" % n)
+        return
+    with open(APPJS, "w", encoding="utf-8", newline="\n") as f:
+        f.write(new)
+    print("  FALLBACK app.js dikemas kini")
 
 
 def stamp():
@@ -100,6 +136,7 @@ def main():
             h.pop(-1)                      # elak entri bertindih
 
     save(d)
+    sync_fallback(d)
 
     print("  Sebelum : RM%s  (%d penderma)" % (jnum(lama_total), lama_donors))
     print("  Sekarang: RM%s  (%d penderma)" % (jnum(d["total"]), d["donors"]))
