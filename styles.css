@@ -64,9 +64,8 @@ p,li{text-wrap:pretty}
 .topbar-in{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:72px}
 
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-width:0}
-.brand-mark{width:38px;height:38px;flex:none;border-radius:9px;background:#fff;padding:3px;object-fit:contain}
 .brand-text{display:flex;flex-direction:column;min-width:0}
-.brand-text strong{font-size:13.5px;letter-spacing:.15em;font-weight:700;white-space:nowrap}
+.brand-text strong{font-size:15px;letter-spacing:.15em;font-weight:700;white-space:nowrap}
 .brand-text small{font-size:10.5px;letter-spacing:.13em;color:#a9c0b4;white-space:nowrap}
 
 .nav{display:flex;align-items:center;gap:22px}
