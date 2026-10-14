@@ -1,0 +1,14 @@
+FAIL LATIHAN - BOLEH DIUBAH SESUKA HATI
+========================================
+
+Jumlah latihan: 700
+
+CARA UJI:
+1. Tukar nombor di atas (700 -> apa-apa nombor)
+2. Tekan butang hijau "Commit changes"
+3. Tunggu ~40 saat
+4. Buka pautan ini - nombor baharu akan muncul:
+   https://infaq.drsuhailsatri.com/data/latihan.txt
+
+Fail ini TIDAK berkaitan dengan jumlah kutipan sebenar.
+Jumlah sebenar ada dalam progress.json sahaja.
