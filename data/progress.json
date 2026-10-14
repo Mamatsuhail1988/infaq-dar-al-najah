@@ -1,9 +1,9 @@
 {
   "cara_edit": "EDIT DI SINI: 'total' (jumlah RM terkumpul), 'donors' (bilangan orang), 'updatedAt' (masa sekarang). 'history' pilihan - salin baris terakhir dan tukar 'at' + 'total' kalau nak rekod semakan bertambah.",
-  "total": 750,
+  "total": 760,
   "target": 3000,
-  "donors": 9,
-  "updatedAt": "2026-10-14T17:50:00+08:00",
+  "donors": 10,
+  "updatedAt": "2026-10-14T18:37:00+08:00",
   "history": [
     { "at": "2026-10-14T13:09:00+08:00", "total": 230 },
     { "at": "2026-10-14T14:28:46+08:00", "total": 330 },
