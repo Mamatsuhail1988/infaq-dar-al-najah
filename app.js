@@ -35,16 +35,17 @@
      Nilai di bawah dikemas kini setiap kali jumlah berubah.
      ---------------------------------------------------------------- */
   var FALLBACK = {
-    total: 700,
+    total: 750,
     target: 3000,
-    donors: 8,
-    updatedAt: '2026-10-14T17:30:31+08:00',
+    donors: 9,
+    updatedAt: '2026-10-14T17:50:00+08:00',
     history: [
       { at: '2026-10-14T13:09:00+08:00', total: 230 },
       { at: '2026-10-14T14:28:46+08:00', total: 330 },
       { at: '2026-10-14T16:15:51+08:00', total: 630 },
       { at: '2026-10-14T16:37:02+08:00', total: 680 },
-      { at: '2026-10-14T17:30:31+08:00', total: 700 }
+      { at: '2026-10-14T17:30:31+08:00', total: 700 },
+      { at: '2026-10-14T17:50:00+08:00', total: 750 }
     ]
   };
   var lastGood = null;
