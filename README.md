@@ -35,6 +35,21 @@ CNAME                   domain tersuai untuk GitHub Pages
 seseorang menderma ialah data peribadi di bawah PDPA, dan infaq lebih afdal
 dirahsiakan. Bilangan penderma sudah cukup untuk menunjukkan ketelusan.
 
+### Menyemak jumlah dengan penyata bank
+
+Sebelum kemas kini, jumlahkan **hanya sumbangan sebenar** daripada penyata:
+
+- **Kecualikan transaksi ujian.** Imbasan QR cuba-cuba (biasanya RM0.10–RM0.50,
+  daripada nama sendiri atau ahli keluarga) bukan sumbangan. Kalau tidak
+  dikecualikan, jumlah dan bilangan penderma dua-dua salah.
+- **`total` = jumlah terkumpul**, bukan jumlah sumbangan terbaru.
+- **`donors` = bilangan orang yang pernah menderma**, bukan bilangan transaksi.
+  Orang yang sama menderma dua kali dikira sekali.
+- **Cara paling selamat:** pastikan setiap angka dalam `history` boleh
+  dijejak ke satu set transaksi sebenar. Kalau RM230 + RM100 = RM330 + RM300
+  = RM630 + RM50 = RM680 berpadan dengan penyata, rekod itu betul. Kalau tidak
+  berpadan, ada sesuatu yang tertinggal.
+
 QR dan butang derma **hilang sendiri** apabila `total` sampai `3000`.
 
 ## Menjalankan di komputer sendiri
