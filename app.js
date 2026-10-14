@@ -259,7 +259,7 @@
     var url = location.protocol.indexOf('http') === 0 ? location.href.split('#')[0] : DEFAULT_URL;
     var msg = 'Jom sama-sama bantu kutipan RM3,000 untuk naik taraf dua tandas duduk '
       + 'di Maahad Tahfiz Dar Al-Najah, bagi keselesaan pelajar yang cedera dan pelawat yang uzur. '
-      + 'Dana diuruskan oleh Dr Suhail. Rujukan pindahan: Infaq Toilet.\n\n' + url;
+      + 'Dana diuruskan oleh Dr Suhail. Rujukan pindahan: Infaq Tandas.\n\n' + url;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
   }
 
@@ -275,7 +275,7 @@
 
     var cr = $('#copy-ref');
     if (cr) cr.addEventListener('click', function () {
-      copy('Infaq Toilet', 'Rujukan “Infaq Toilet” disalin.', 'Rujukan pindahan: Infaq Toilet');
+      copy('Infaq Tandas', 'Rujukan “Infaq Tandas” disalin.', 'Rujukan pindahan: Infaq Tandas');
     });
 
     var cl = $('#copy-link');
