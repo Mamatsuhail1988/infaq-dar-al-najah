@@ -2,21 +2,28 @@
 """Kemas kini data/progress.json dengan selamat.
 
 Guna:
-    python update_jumlah.py tambah 20          # +RM20, penderma +1
-    python update_jumlah.py tambah 20 --sama   # +RM20, penderma SAMA (orang yang sama derma lagi)
-    python update_jumlah.py set 700 --donors 8 # tetapkan terus (untuk pembetulan)
+    python update_jumlah.py tambah 20           # +RM20, penderma +1
+    python update_jumlah.py tambah 20 --sama    # +RM20, penderma SAMA (orang sama derma lagi)
+    python update_jumlah.py set 700 --donors 8  # tetapkan terus (untuk pembetulan)
+    python update_jumlah.py rapikan             # tulis semula fail tanpa tukar data
 
-Sentiasa: rekod tarikh, tambah satu baris 'history', simpan format JSON.
+Fail output sengaja DIPADATKAN (satu entri history = satu baris) supaya
+senang diedit terus di GitHub melalui telefon. `json.dump(indent=2)`
+mengembangkan setiap entri jadi 3 baris - fail jadi dua kali panjang.
 """
 import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PATH = os.path.join(HERE, "data", "progress.json")
 MYT = timezone(timedelta(hours=8))
+
+CARA = ("EDIT DI SINI: 'total' (jumlah RM terkumpul), 'donors' (bilangan orang), "
+        "'updatedAt' (masa sekarang). 'history' pilihan - salin baris terakhir "
+        "dan tukar 'at' + 'total' kalau nak rekod semakan bertambah.")
 
 
 def load():
@@ -24,10 +31,30 @@ def load():
         return json.load(f)
 
 
+def jnum(v):
+    """700.0 -> '700'  |  700.5 -> '700.50'"""
+    f = float(v)
+    return str(int(f)) if f == int(f) else "%.2f" % f
+
+
 def save(d):
+    """Tulis JSON padat: satu entri history = satu baris."""
+    h = d.get("history", [])
+    out = ["{",
+           '  "cara_edit": %s,' % json.dumps(CARA, ensure_ascii=False),
+           '  "total": %s,' % jnum(d["total"]),
+           '  "target": %s,' % jnum(d["target"]),
+           '  "donors": %d,' % d["donors"],
+           '  "updatedAt": %s,' % json.dumps(d["updatedAt"]),
+           '  "history": [']
+    for i, e in enumerate(h):
+        out.append('    { "at": %s, "total": %s }%s'
+                   % (json.dumps(e["at"]), jnum(e["total"]),
+                      "," if i < len(h) - 1 else ""))
+    out += ["  ]", "}"]
     with open(PATH, "w", encoding="utf-8", newline="\n") as f:
-        json.dump(d, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+        f.write("\n".join(out) + "\n")
+    json.load(open(PATH, encoding="utf-8"))   # sahkan masih JSON sah
 
 
 def stamp():
@@ -36,8 +63,9 @@ def stamp():
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("mod", choices=["tambah", "set"])
-    p.add_argument("nilai", type=float, help="jumlah RM")
+    p.add_argument("mod", choices=["tambah", "set", "rapikan"],
+                   help="'rapikan' = tulis semula fail tanpa tukar data")
+    p.add_argument("nilai", type=float, nargs="?", default=0.0, help="jumlah RM")
     p.add_argument("--donors", type=int, default=None,
                    help="bilangan penderma (mod 'set')")
     p.add_argument("--sama", action="store_true",
@@ -47,40 +75,38 @@ def main():
     d = load()
     lama_total = d["total"]
     lama_donors = d.get("donors", 0)
+    h = d.setdefault("history", [])
 
-    if a.mod == "tambah":
+    if a.mod == "rapikan":
+        d["total"] = lama_total
+        d["donors"] = lama_donors
+    elif a.mod == "tambah":
         if a.nilai <= 0:
             sys.exit("RALAT: jumlah mesti positif")
-        baharu = round(lama_total + a.nilai, 2)
-        donors = lama_donors if a.sama else lama_donors + 1
-    else:
-        baharu = round(a.nilai, 2)
-        donors = a.donors if a.donors is not None else lama_donors
+        d["total"] = lama_total + a.nilai
+        d["donors"] = lama_donors if a.sama else lama_donors + 1
+        h.append({"at": stamp(), "total": d["total"]})
+    else:  # set
+        d["total"] = a.nilai
+        d["donors"] = a.donors if a.donors is not None else lama_donors
+        h.append({"at": stamp(), "total": a.nilai})
 
-    if baharu < lama_total:
-        sys.exit("RALAT: jumlah baharu (%.2f) lebih KECIL daripada lama (%.2f).\n"
-                 "       Kalau memang nak turunkan, guna mod 'set'." % (baharu, lama_total))
-
-    t = stamp()
-    d["total"] = baharu
-    d["donors"] = donors
-    d["updatedAt"] = t
-    d.setdefault("history", []).append({"at": t, "total": baharu})
-
-    # elak entri bertindih pada jumlah sama
-    h = d["history"]
-    if len(h) > 1 and h[-1]["total"] == h[-2]["total"]:
-        h.pop(-1)
+    if a.mod != "rapikan":
+        if d["total"] < lama_total:
+            sys.exit("RALAT: jumlah baharu lebih KECIL daripada lama.\n"
+                     "       Kalau memang nak turunkan, guna mod 'set'.")
+        d["updatedAt"] = stamp()
+        if len(h) > 1 and h[-1]["total"] == h[-2]["total"]:
+            h.pop(-1)                      # elak entri bertindih
 
     save(d)
 
-    print("  Sebelum : RM%.2f  (%d penderma)" % (lama_total, lama_donors))
-    print("  Tambah  : RM%.2f" % a.nilai if a.mod == "tambah" else "  Set     : RM%.2f" % baharu)
-    print("  Sekarang: RM%.2f  (%d penderma)" % (baharu, donors))
-    print("  Baki    : RM%.2f" % (d["target"] - baharu))
-    print("  Peratus : %.1f%%" % (baharu / d["target"] * 100))
-    print("  Sejarah : " + " -> ".join("RM%g" % x["total"] for x in h))
-    print("  Masa    : " + t)
+    print("  Sebelum : RM%s  (%d penderma)" % (jnum(lama_total), lama_donors))
+    print("  Sekarang: RM%s  (%d penderma)" % (jnum(d["total"]), d["donors"]))
+    print("  Baki    : RM%s" % jnum(d["target"] - d["total"]))
+    print("  Peratus : %.1f%%" % (d["total"] / d["target"] * 100))
+    print("  Sejarah : " + " -> ".join("RM%s" % jnum(x["total"]) for x in h))
+    print("  Baris   : %d" % len(open(PATH, encoding="utf-8").readlines()))
 
 
 if __name__ == "__main__":
