@@ -59,6 +59,46 @@
 
   function bars() { return $$('.bar > span, .progress-rail span'); }
 
+  /* ---------- rekod semakan ---------- */
+  function renderLog(history) {
+    var el = $('#log'), sec = $('#rekod');
+    if (!el || !sec) return;
+    if (!Array.isArray(history) || !history.length) { sec.classList.add('hidden'); return; }
+
+    var fmt = new Intl.DateTimeFormat('ms-MY', {
+      dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kuala_Lumpur'
+    });
+    var items = history.slice().sort(function (a, b) {
+      return new Date(b.at) - new Date(a.at);
+    });
+
+    el.innerHTML = '';
+    items.forEach(function (h, i) {
+      var li = document.createElement('li');
+
+      var t = document.createElement('time');
+      var dt = new Date(h.at);
+      t.textContent = isNaN(dt) ? h.at : fmt.format(dt);
+      t.setAttribute('datetime', h.at);
+
+      var b = document.createElement('b');
+      b.textContent = money(h.total);
+
+      var s = document.createElement('small');
+      if (i === items.length - 1) {
+        s.textContent = 'Semakan pertama';
+      } else if (i === 0) {
+        s.textContent = 'Disahkan terkini';
+      } else {
+        s.textContent = 'Naik ' + money(h.total - items[i + 1].total);
+      }
+
+      li.appendChild(t); li.appendChild(b); li.appendChild(s);
+      el.appendChild(li);
+    });
+    sec.classList.remove('hidden');
+  }
+
   /* ---------- kiraan naik ---------- */
   function countTo(from, to, duration) {
     if (rafId)    { cancelAnimationFrame(rafId); rafId = null; }
@@ -159,6 +199,15 @@
     var goal = $('#goal-message');
     if (pay)  pay.classList.toggle('hidden', reached);
     if (goal) goal.classList.toggle('hidden', !reached);
+
+    if (typeof d.donors === 'number' && d.donors > 0) {
+      setText('#donors-line', d.donors === 1
+        ? '1 penderma setakat ini'
+        : d.donors + ' penderma setakat ini');
+    } else {
+      setText('#donors-line', '');
+    }
+    renderLog(d.history);
 
     $$('.donate-action').forEach(function (a) {
       a.textContent = reached ? 'Kutipan selesai'

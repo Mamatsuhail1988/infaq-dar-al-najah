@@ -21,10 +21,19 @@ CNAME                   domain tersuai untuk GitHub Pages
 
 1. Semak akaun AEON Bank dan kira **jumlah keseluruhan** terkumpul
    (contoh: RM220 + RM50 → masukkan `270`).
-2. Buka `data/progress.json` dan ubah `total`.
-3. Ubah `updatedAt` kepada tarikh dan masa semasa (format ISO, waktu Malaysia,
+2. Buka `data/progress.json`.
+3. Ubah `total` kepada jumlah keseluruhan baharu.
+4. Ubah `donors` kepada **bilangan penderma** setakat ini (nombor sahaja —
+   jangan letak nama sesiapa).
+5. Ubah `updatedAt` kepada tarikh dan masa semasa (format ISO, waktu Malaysia,
    contoh `2026-10-20T09:30:00+08:00`).
-4. Commit dan push. Laman akan menunjukkan jumlah baharu dalam ~1 minit.
+6. Tambah **satu baris** dalam `history` — tarikh dan jumlah yang baru disahkan.
+   Baris ini yang membina "Rekod semakan" pada laman.
+7. Commit dan push. Laman menunjukkan jumlah baharu dalam ~1 minit.
+
+**Penting:** jangan letak nama penderma, walaupun dipendekkan. Nama + fakta
+seseorang menderma ialah data peribadi di bawah PDPA, dan infaq lebih afdal
+dirahsiakan. Bilangan penderma sudah cukup untuk menunjukkan ketelusan.
 
 QR dan butang derma **hilang sendiri** apabila `total` sampai `3000`.
 
