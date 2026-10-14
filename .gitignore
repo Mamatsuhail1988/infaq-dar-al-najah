@@ -1,0 +1,15 @@
+# fail sementara / sistem
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# skrip bantu tempatan
+_probe.html
+_*.html
+_*.css
+_*.js
+
+# editor
+.vscode/
+.idea/
+*.swp
