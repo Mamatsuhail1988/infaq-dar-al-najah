@@ -88,7 +88,7 @@
       if (i === items.length - 1) {
         s.textContent = 'Semakan pertama';
       } else if (i === 0) {
-        s.textContent = 'Disahkan terkini';
+        s.textContent = 'Naik ' + money(h.total - items[1].total) + ' · terakhir disahkan';
       } else {
         s.textContent = 'Naik ' + money(h.total - items[i + 1].total);
       }
