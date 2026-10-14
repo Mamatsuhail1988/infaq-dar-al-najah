@@ -12,9 +12,16 @@
   var TARGET = 3000;
   var REFRESH_MS = 15000;
   var DEFAULT_URL = 'https://infaq.drsuhailsatri.com/';
+  var DUR_FIRST = 1600;   // ms — kiraan pertama, dari RM0
+  var DUR_NEXT  = 900;    // ms — bila jumlah berubah kemudian
+
+  var prefersReduced = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var lastTotal = null;
   var busy = false;
+  var rafId = null;
+  var settleId = null;
 
   function money(v) {
     return 'RM' + Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 });
@@ -31,20 +38,58 @@
     el._t = setTimeout(function () { el.classList.add('hidden'); }, 3400);
   }
 
-  /* ---------------- paparan jumlah ---------------- */
-  function render(d) {
+  /* ---------- lukis SEMUA angka dari satu nilai ---------- */
+  function paint(v) {
+    var reached = v >= TARGET;
+    setText('#total', money(v));
+    setText('#mobile-total', money(v));
+    setText('#foot-progress', money(v) + ' daripada ' + money(TARGET));
+    setText('#remaining', reached ? 'Sasaran dicapai'
+      : 'Baki ' + money(Math.max(0, TARGET - v)));
+    setText('#percent', pct(v).toFixed(1) + '% tercapai');
+
+    var w = pct(v) + '%';
+    var bar = $('#bar');   if (bar)  bar.style.width = w;
+    var rail = $('#rail'); if (rail) rail.style.width = w;
+  }
+
+  function bars() { return $$('.bar > span, .progress-rail span'); }
+
+  /* ---------- kiraan naik ---------- */
+  function countTo(from, to, duration) {
+    if (rafId)    { cancelAnimationFrame(rafId); rafId = null; }
+    if (settleId) { clearTimeout(settleId); settleId = null; }
+
+    var done = function () {
+      bars().forEach(function (b) { b.classList.remove('instant'); });
+      paint(to);
+    };
+
+    if (prefersReduced || duration <= 0 || from === to) { done(); return; }
+
+    bars().forEach(function (b) { b.classList.add('instant'); });
+
+    var t0 = null;
+    function frame(now) {
+      if (t0 === null) t0 = now;
+      var p = Math.min(1, (now - t0) / duration);
+      var eased = 1 - Math.pow(1 - p, 3);      // laju dulu, perlahan di hujung
+      paint(from + (to - from) * eased);
+      if (p < 1) { rafId = requestAnimationFrame(frame); }
+      else { rafId = null; done(); }
+    }
+    rafId = requestAnimationFrame(frame);
+
+    // jaring keselamatan: kalau rAF tersekat (tab latar), tetap mendarat
+    settleId = setTimeout(function () {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      done();
+    }, duration + 600);
+  }
+
+  /* ---------- paparan ---------- */
+  function render(d, animate) {
     var total = Number(d.total) || 0;
-    var reached = total >= TARGET;
-    var p = pct(total);
-
-    setText('#total', money(total));
-    setText('#mobile-total', money(total));
-    setText('#foot-progress', money(total) + ' daripada ' + money(TARGET));
-    setText('#remaining', reached ? 'Sasaran dicapai' : 'Baki ' + money(Math.max(0, TARGET - total)));
-    setText('#percent', p.toFixed(1) + '% tercapai');
-
-    var bar = $('#bar');   if (bar)  bar.style.width = p + '%';
-    var rail = $('#rail'); if (rail) rail.style.width = p + '%';
 
     if (d.updatedAt) {
       var dt = new Date(d.updatedAt);
@@ -55,21 +100,29 @@
       }
     }
 
+    var reached = total >= TARGET;
     var pay = $('#pay-block');
     var goal = $('#goal-message');
     if (pay)  pay.classList.toggle('hidden', reached);
     if (goal) goal.classList.toggle('hidden', !reached);
 
     $$('.donate-action').forEach(function (a) {
-      a.textContent = reached ? 'Kutipan selesai' : (a.classList.contains('btn-small') ? 'Berinfaq ↗' : 'Saya nak berinfaq ↗');
+      a.textContent = reached ? 'Kutipan selesai'
+        : (a.classList.contains('btn-small') ? 'Berinfaq ↗' : 'Saya nak berinfaq ↗');
     });
 
     if (lastTotal !== null && total !== lastTotal) {
       setText('#update-announcement', 'Jumlah terkini ' + money(total));
     }
+
+    var from = (lastTotal === null) ? 0 : lastTotal;
+    if (animate) countTo(from, total, lastTotal === null ? DUR_FIRST : DUR_NEXT);
+    else         paint(total);
+
     lastTotal = total;
   }
 
+  /* ---------- ambil data ---------- */
   function refresh() {
     if (busy) return;
     busy = true;
@@ -79,11 +132,12 @@
     fetch('data/progress.json?v=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (d) {
-        render(d);
         setText('#connection', 'Kemas kini berkala · sekitar setiap 6 jam');
+        render(d, true);
       })
       .catch(function () {
         setText('#connection', 'Sambungan terganggu · jumlah terakhir dipaparkan');
+        if (lastTotal === null) { lastTotal = 0; paint(0); }
       })
       .then(function () {
         busy = false;
@@ -91,35 +145,35 @@
       });
   }
 
-  /* ---------------- tab pembayaran ---------------- */
+  /* ---------- tab pembayaran ---------- */
   function initTabs() {
-    var tabs = $$('.tab');
-    if (!tabs.length) return;
+    var t = $$('.tab');
+    if (!t.length) return;
 
     function select(tab) {
-      tabs.forEach(function (t) {
-        var on = (t === tab);
-        t.classList.toggle('is-active', on);
-        t.setAttribute('aria-selected', String(on));
-        var panel = document.getElementById(t.getAttribute('aria-controls'));
+      t.forEach(function (x) {
+        var on = (x === tab);
+        x.classList.toggle('is-active', on);
+        x.setAttribute('aria-selected', String(on));
+        var panel = document.getElementById(x.getAttribute('aria-controls'));
         if (panel) panel.classList.toggle('hidden', !on);
       });
     }
 
-    tabs.forEach(function (t, i) {
-      t.addEventListener('click', function () { select(t); });
-      t.addEventListener('keydown', function (e) {
+    t.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { select(tab); });
+      tab.addEventListener('keydown', function (e) {
         var k = e.key, n = null;
-        if (k === 'ArrowRight' || k === 'ArrowDown') n = tabs[(i + 1) % tabs.length];
-        if (k === 'ArrowLeft'  || k === 'ArrowUp')   n = tabs[(i - 1 + tabs.length) % tabs.length];
-        if (k === 'Home') n = tabs[0];
-        if (k === 'End')  n = tabs[tabs.length - 1];
+        if (k === 'ArrowRight' || k === 'ArrowDown') n = t[(i + 1) % t.length];
+        if (k === 'ArrowLeft'  || k === 'ArrowUp')   n = t[(i - 1 + t.length) % t.length];
+        if (k === 'Home') n = t[0];
+        if (k === 'End')  n = t[t.length - 1];
         if (n) { e.preventDefault(); n.focus(); select(n); }
       });
     });
   }
 
-  /* ---------------- salin ---------------- */
+  /* ---------- salin ---------- */
   function copy(text, okMsg, failMsg) {
     function fallback() {
       try {
@@ -148,7 +202,7 @@
     window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
   }
 
-  /* ---------------- mula ---------------- */
+  /* ---------- mula ---------- */
   function init() {
     var rb = $('#refresh');
     if (rb) rb.addEventListener('click', refresh);
