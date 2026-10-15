@@ -24,8 +24,9 @@ APPJS = os.path.join(HERE, "app.js")
 MYT = timezone(timedelta(hours=8))
 
 CARA = ("EDIT DI SINI: 'total' (jumlah RM terkumpul), 'donors' (bilangan orang), "
-        "'updatedAt' (masa sekarang). 'history' pilihan - salin baris terakhir "
-        "dan tukar 'at' + 'total' kalau nak rekod semakan bertambah.")
+        "'updatedAt' (masa sekarang). Untuk rekod semakan: SALIN baris PERTAMA "
+        "dalam 'history', tampal di ATASnya, tukar 'at' + 'total'. "
+        "Baris terbaharu sentiasa di ATAS.")
 
 
 def load():
@@ -49,7 +50,7 @@ def save(d):
            '  "donors": %d,' % d["donors"],
            '  "updatedAt": %s,' % json.dumps(d["updatedAt"]),
            '  "history": [']
-    for i, e in enumerate(h):
+    for i, e in enumerate(reversed(h)):     # terbaharu di ATAS - senang nak salin
         out.append('    { "at": %s, "total": %s }%s'
                    % (json.dumps(e["at"]), jnum(e["total"]),
                       "," if i < len(h) - 1 else ""))
@@ -74,7 +75,7 @@ def sync_fallback(d):
     hist = ",\n".join(
         "      { at: %s, total: %s }" % (json.dumps(e["at"]).replace('"', "'"),
                                        jnum(e["total"]))
-        for e in h)
+        for e in reversed(h))
     block = ("  var FALLBACK = {\n"
              "    total: %s,\n"
              "    target: %s,\n"
