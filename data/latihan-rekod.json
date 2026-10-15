@@ -1,0 +1,13 @@
+{
+  "cara_edit": "FAIL LATIHAN - TIDAK berkaitan laman sebenar. Cuba bebas. Untuk tambah rekod: SALIN baris PERTAMA dalam 'history', tampal di ATASnya, tukar 'at' + 'total'. Baris terbaharu sentiasa di ATAS.",
+  "total": 860,
+  "target": 3000,
+  "donors": 11,
+  "updatedAt": "2026-10-15T05:50:00+08:00",
+  "history": [
+    { "at": "2026-10-15T05:50:00+08:00", "total": 860 },
+    { "at": "2026-10-14T18:37:00+08:00", "total": 760 },
+    { "at": "2026-10-14T17:50:00+08:00", "total": 750 },
+    { "at": "2026-10-14T13:09:00+08:00", "total": 230 }
+  ]
+}
