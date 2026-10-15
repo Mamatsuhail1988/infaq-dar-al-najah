@@ -106,12 +106,16 @@ def main():
                    help="bilangan penderma (mod 'set')")
     p.add_argument("--sama", action="store_true",
                    help="penderma yang sama derma lagi - bilangan TIDAK naik")
+    p.add_argument("--masa", default=None,
+                   help="masa SEBENAR derma masuk (ISO, cth 2026-10-14T18:37:00+08:00). "
+                        "Kalau ditinggal, guna masa sekarang.")
     a = p.parse_args()
 
     d = load()
     lama_total = d["total"]
     lama_donors = d.get("donors", 0)
     h = d.setdefault("history", [])
+    t = a.masa or stamp()
 
     if a.mod == "rapikan":
         d["total"] = lama_total
@@ -121,19 +125,23 @@ def main():
             sys.exit("RALAT: jumlah mesti positif")
         d["total"] = lama_total + a.nilai
         d["donors"] = lama_donors if a.sama else lama_donors + 1
-        h.append({"at": stamp(), "total": d["total"]})
+        h.append({"at": t, "total": d["total"]})
     else:  # set
         d["total"] = a.nilai
         d["donors"] = a.donors if a.donors is not None else lama_donors
-        h.append({"at": stamp(), "total": a.nilai})
+        h.append({"at": t, "total": a.nilai})
 
     if a.mod != "rapikan":
         if d["total"] < lama_total:
             sys.exit("RALAT: jumlah baharu lebih KECIL daripada lama.\n"
                      "       Kalau memang nak turunkan, guna mod 'set'.")
-        d["updatedAt"] = stamp()
+        # 'updatedAt' = masa derma TERAKHIR yang disahkan, bukan masa skrip
+        # dijalankan - supaya laman menunjukkan bila wang benar-benar masuk.
+        d["updatedAt"] = max(e["at"] for e in h)
         if len(h) > 1 and h[-1]["total"] == h[-2]["total"]:
             h.pop(-1)                      # elak entri bertindih
+        # simpan history ikut urutan masa (penting bila ada entri backdated)
+        h.sort(key=lambda e: e["at"])
 
     save(d)
     sync_fallback(d)
